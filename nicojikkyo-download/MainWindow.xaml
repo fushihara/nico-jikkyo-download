@@ -1,0 +1,40 @@
+﻿<Window x:Class="nicojikkyo_download.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:nicojikkyo_download"
+        mc:Ignorable="d"
+        Title="NicojShiftGUIのGUI" Height="412" Width="900"
+        Initialized="Window_Initialized" 
+        Drop="Window_Drop"
+        PreviewDragOver="Window_PreviewDragOver" MinWidth="500" MinHeight="200" >
+    <DockPanel>
+        <Grid DockPanel.Dock="Top">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="150"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="20"/>
+                <RowDefinition Height="20"/>
+                <RowDefinition Height="20"/>
+            </Grid.RowDefinitions>
+            <TextBlock Grid.Row="0" VerticalAlignment="Center" HorizontalAlignment="Right">動画のパス</TextBlock>
+            <TextBlock Grid.Row="1" VerticalAlignment="Center" HorizontalAlignment="Right">chromeのセッション</TextBlock>
+            <TextBlock Grid.Row="2" HorizontalAlignment="Right" VerticalAlignment="Center">rubyファイルのセッション</TextBlock>
+            <TextBox Name="TsFilePathTextBox" Grid.Column="1" Grid.Row="0" FontFamily="MS Gothic"/>
+            <TextBox Name="ChromeSessionTextBox" Grid.Column="1" Grid.Row="1" FontFamily="MS Gothic"/>
+            <TextBox Name="rubySessionTextBox" Grid.Column="1" Grid.Row="2" FontFamily="MS Gothic"/>
+        </Grid>
+        <Grid DockPanel.Dock="Bottom" Height="30">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+            <Button Name="SessionOverwriteButton" Grid.Column="0" Click="SessionOverwriteButton_Click">セッションをJKCommentGetter.rbに書き込み</Button>
+            <Button Name="CommentGetButton" Grid.Column="1" Click="CommentGetButton_Click">コメント再取得</Button>
+        </Grid>
+        <RichTextBox Name="rTextBox" TextOptions.TextFormattingMode="Display" TextOptions.TextRenderingMode="ClearType" VerticalScrollBarVisibility="Visible" FontFamily="MS Gothic"></RichTextBox>
+    </DockPanel>
+</Window>
