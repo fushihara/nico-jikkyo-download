@@ -24,6 +24,7 @@ namespace nicojikkyo_download {
         String wDirectoryPath = "";
         String chromeCookiePath = "";
         String jkCommentGetterRbPath = "";
+        bool closeAfterSuccess = false;
         public MainWindow() {
             InitializeComponent();
         }
@@ -41,8 +42,9 @@ namespace nicojikkyo_download {
                     this.chromeCookiePath = cmd.Substring("chromeCookie=".Length);
                 } else if (cmd.StartsWith("jkcommentgetterrb=")) {
                     this.jkCommentGetterRbPath = cmd.Substring("jkcommentgetterrb=".Length);
-                } else if (System.IO.File.Exists(cmd)) {
+                } else if (System.IO.File.Exists(cmd) && cmd.ToLower().EndsWith(".ts")) {
                     this.TsFilePathTextBox.Text = cmd;
+                    this.closeAfterSuccess = true;
                 }
             }
             if (this.nicojshiftExePath == "") {
@@ -139,11 +141,10 @@ namespace nicojikkyo_download {
             String copyToPath = System.IO.Path.Combine(System.IO.Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location), System.IO.Path.GetFileNameWithoutExtension(System.Reflection.Assembly.GetExecutingAssembly().Location) + "_cookie");
             System.IO.File.Copy(this.chromeCookiePath, copyToPath, true);
             this.addLog($@"chromeからクッキー読み込み ""{this.chromeCookiePath}"" を ""{copyToPath}"" にコピー", color: Colors.Gray);
-            var connectionString = "Data Source=" + copyToPath + ";pooling=false";
+            var connectionString = "Data Source=\"" + this.chromeCookiePath + "\";pooling=false;";
             using (var conn = new System.Data.SQLite.SQLiteConnection(connectionString))
             using (var cmd = conn.CreateCommand()) {
-                cmd.CommandText = "SELECT name,encrypted_value,value,creation_utc,expires_utc,last_access_utc FROM cookies WHERE host_key = '.nicovideo.jp'";
-
+                cmd.CommandText = "SELECT name,encrypted_value,value,creation_utc,expires_utc,last_access_utc FROM cookies WHERE host_key = '.nicovideo.jp' and name like 'user_session%'";
                 conn.Open();
                 using (SQLiteDataReader reader = cmd.ExecuteReader()) {
                     while (reader.Read()) {
@@ -158,7 +159,23 @@ namespace nicojikkyo_download {
                             yield return Tuple.Create(reader.GetString(0), rawData, createionUtc, expiresUtc, lastAccessUtc);
                             continue;
                         }
-                        var decodedData = System.Security.Cryptography.ProtectedData.Unprotect(encryptedData, null, System.Security.Cryptography.DataProtectionScope.CurrentUser);
+                        byte[] decodedData;
+                        try {
+                            // 先頭n byteをカット
+                            //int trimByte = 3;
+                            //byte[] trimedEncryptData = new byte[encryptedData.Length - trimByte];
+                            //Array.Copy(encryptedData, trimByte, trimedEncryptData, 0, trimedEncryptData.Length);
+                            //this.addLog($@"------", color: Colors.Gray);
+                            //this.addLog($@"{BitConverter.ToString(encryptedData)}", color: Colors.Gray);
+                            //this.addLog($@"{BitConverter.ToString(trimedEncryptData)}", color: Colors.Gray);
+                            //this.addLog($@"------", color: Colors.Gray);
+                            decodedData = System.Security.Cryptography.ProtectedData.Unprotect(encryptedData, null, System.Security.Cryptography.DataProtectionScope.CurrentUser);
+                        }catch(System.Security.Cryptography.CryptographicException e) {
+                            //  {BitConverter.ToString(encryptedData)}
+                            this.addLog($@"encryptDataを複合する事に失敗するデータがありました key={reader.GetString(0)} {e.Message.Trim()}", color: Colors.Gray);
+                            continue;
+
+                        }
                         var plainText = Encoding.ASCII.GetString(decodedData); // Looks like ASCII
                         yield return Tuple.Create(reader.GetString(0), plainText, createionUtc, expiresUtc, lastAccessUtc);
                     }
@@ -205,6 +222,13 @@ namespace nicojikkyo_download {
                 if (process.HasExited) {
                     break;
                 }
+            }
+            if (this.closeAfterSuccess) {
+                this.addLog($@"自動的にプロセスを終了します", color: Colors.Red);
+                await Task.Delay(1000);
+                this.Close();
+                return;
+                
             }
             this.CommentGetButton.IsEnabled = true;
         }
@@ -266,6 +290,7 @@ namespace nicojikkyo_download {
         void Window_Drop(object sender, DragEventArgs e) {
             string[] files = e.Data.GetData(DataFormats.FileDrop) as string[];
             if (files != null) {
+                this.addLog($@"ファイルがドロップされた ""{files[0]}""");
                 this.TsFilePathTextBox.Text = files[0];
                 this.execNicoJShift();
             }
